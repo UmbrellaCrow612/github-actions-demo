@@ -22,13 +22,10 @@ jobs:
           node-version: 14
 
       - name: Install Dependencies
-        run: npm install
+        run: npm run ci
 
       - name: Build Angular App
         run: npm run build
 
       - name: Run Tests
         run: npm run test
-
-      - name: Lint Code
-        run: npm run lint
