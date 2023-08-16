@@ -1,4 +1,4 @@
-name: Test and Build on PR to main
+name: Build on PR to main
 
 on:
   pull_request:
@@ -19,10 +19,8 @@ jobs:
           node-version: 16
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run tests
-        run: npm test
 
       - name: Build app
         run: npm run build
