@@ -1,9 +1,10 @@
 name: Require Review for no_change Modifications
 
 on:
-  pull_request:
-    paths:
-      - 'no_change/**' # This will trigger the workflow only if there are changes in the no_change folder
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
 
 jobs:
   review:
@@ -34,19 +35,11 @@ jobs:
             const prNumber = context.payload.pull_request.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            
-            const review = await github.pulls.createReview({
+
+            // Request review from the repository owner (you)
+            await github.pulls.createReviewRequest({
               owner: owner,
               repo: repo,
               pull_number: prNumber,
-              event: 'REQUEST_CHANGES',
-              comments: [
-                {
-                  path: 'no_change/',
-                  position: 1, // You might need to adjust this position
-                  body: 'Modifications detected in the no_change folder. Please review.',
-                },
-              ],
+              reviewers: [owner], // Request review from the owner
             });
-            
-            console.log('Review requested:', review.data);
