@@ -18,24 +18,31 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const changes = context.payload.commits.map(commit => commit.added.concat(commit.modified));
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
 
-            if (changes.some(path => path.startsWith('no_change/'))) {
-              const owner = context.repo.owner;
-              const repo = context.repo.repo;
-              const pullRequestNumber = context.issue.number;
+            const changedFiles = new Set();
+            commits.data.forEach(commit => {
+              commit.files.forEach(file => {
+                if (file.filename.startsWith('no_change/')) {
+                  changedFiles.add(file.filename);
+                }
+              });
+            });
 
-              if (owner !== 'umbrellaCrow612') {
-                await github.rest.pulls.createReview({
-                  owner: owner,
-                  repo: repo,
-                  pull_number: pullRequestNumber,
-                  event: 'REQUEST_REVIEW',
-                  reviewers: ['umbrellaCrow612']
-                });
-              } else {
-                console.log('Skipping review request as the pusher is umbrellaCrow612.');
-              }
+            if (changedFiles.size > 0) {
+              const pullRequestNumber = context.payload.pull_request.number;
+
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullRequestNumber,
+                event: 'REQUEST_REVIEW',
+                reviewers: ['umbrellaCrow612']
+              });
             } else {
               console.log('No changes in the no_change folder. Skipping review request.');
             }
