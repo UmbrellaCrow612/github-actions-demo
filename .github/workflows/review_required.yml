@@ -18,12 +18,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const changes = github.context.payload.commits.map(commit => commit.added.concat(commit.modified));
+            const changes = context.payload.commits.map(commit => commit.added.concat(commit.modified));
 
             if (changes.some(path => path.startsWith('no_change/'))) {
-              const owner = github.context.payload.repository.owner.login;
-              const repo = github.context.payload.repository.name;
-              const pullRequestNumber = github.context.payload.pull_request.number;
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const pullRequestNumber = context.issue.number;
 
               if (owner !== 'umbrellaCrow612') {
                 await github.rest.pulls.createReview({
