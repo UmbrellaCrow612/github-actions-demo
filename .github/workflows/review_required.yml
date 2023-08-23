@@ -18,14 +18,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const commits = await github.rest.pulls.listCommits({
+            const { data: commits } = await github.rest.pulls.listCommits({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number
             });
 
             const changedFiles = new Set();
-            commits.data.forEach(commit => {
+            commits.forEach(commit => {
               commit.files.forEach(file => {
                 if (file.filename.startsWith('no_change/')) {
                   changedFiles.add(file.filename);
