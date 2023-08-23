@@ -16,24 +16,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Request review
-        uses: actions/github-script@v4
+      - name: Add Pull Request Reviewer
+        uses: AveryCameronUofR/add-reviewer-gh-action@1.0.4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { data: reviews } = await github.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-
-            const reviewRequested = reviews.some(review => review.user.login === 'umbrellaman612');
-
-            if (!reviewRequested) {
-              await github.pulls.createReviewRequest({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number,
-                reviewers: ['umbrellaman612'],
-              });
-            }
+          reviewers: "umbrellaman612"
+          token: ${{ secrets.GITHUB_TOKEN }}
