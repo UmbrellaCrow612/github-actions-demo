@@ -1,56 +1,52 @@
-name: Require Review on Changes to 'no_change' Folder
+name: Require Review for no_change Modifications
 
 on:
   pull_request:
-    branches:
-      - main
+    paths:
+      - 'no_change/**' # This will trigger the workflow only if there are changes in the no_change folder
 
 jobs:
-  check_changes:
+  review:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Find changes
-        id: find_changes
+      - name: Check for modifications
+        id: check_modifications
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-          echo "::set-output name=changed_files::${CHANGED_FILES}"
-
-      - name: Check 'no_change' folder changes
-        id: no_change_changes
-        run: |
-          CHANGED_FILES="${{ steps.find_changes.outputs.changed_files }}"
-          if [ -n "$CHANGED_FILES" ]; then
-            NO_CHANGE_CHANGES=$(echo "$CHANGED_FILES" | grep -c '^no_change/')
+          changes=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- no_change/)
+          if [ -n "$changes" ]; then
+            echo "Modifications detected in no_change folder."
+            echo "::set-output name=modifications::true"
           else
-            NO_CHANGE_CHANGES=0
+            echo "No modifications in no_change folder."
+            echo "::set-output name=modifications::false"
           fi
-          echo "::set-output name=no_change_changes::${NO_CHANGE_CHANGES}"
 
-      - name: Add required review if 'no_change' changes
-        id: add_review
-        if: steps.no_change_changes.outputs.no_change_changes > 0
-        run: |
-          PR_NUMBER="${{ github.event.number }}"
-          echo "Adding required review to PR #$PR_NUMBER"
-          REVIEW_ID=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"event": "REQUEST_CHANGES"}' \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
-            | jq -r .id)
-          echo "::set-output name=review_id::${REVIEW_ID}"
-
-      - name: Comment on PR if no 'no_change' changes
-        if: steps.no_change_changes.outputs.no_change_changes == 0
-        run: |
-          PR_NUMBER="${{ github.event.number }}"
-          echo "No changes in 'no_change' folder. Adding a comment to PR #$PR_NUMBER"
-          COMMENT=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -d '{"body": "No changes in the `no_change` folder."}' \
-            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
-            | jq -r .id)
-          echo "::set-output name=comment_id::${COMMENT}"
+      - name: Request review if necessary
+        if: steps.check_modifications.outputs.modifications == 'true'
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            const review = await github.pulls.createReview({
+              owner: owner,
+              repo: repo,
+              pull_number: prNumber,
+              event: 'REQUEST_CHANGES',
+              comments: [
+                {
+                  path: 'no_change/',
+                  position: 1, // You might need to adjust this position
+                  body: 'Modifications detected in the no_change folder. Please review.',
+                },
+              ],
+            });
+            
+            console.log('Review requested:', review.data);
