@@ -23,7 +23,11 @@ jobs:
         id: no_change_changes
         run: |
           CHANGED_FILES="${{ steps.find_changes.outputs.changed_files }}"
-          NO_CHANGE_CHANGES=$(echo "$CHANGED_FILES" | grep -c '^no_change/')
+          if [ -n "$CHANGED_FILES" ]; then
+            NO_CHANGE_CHANGES=$(echo "$CHANGED_FILES" | grep -c '^no_change/')
+          else
+            NO_CHANGE_CHANGES=0
+          fi
           echo "::set-output name=no_change_changes::${NO_CHANGE_CHANGES}"
 
       - name: Add required review if 'no_change' changes
@@ -38,7 +42,7 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
             | jq -r .id)
           echo "::set-output name=review_id::${REVIEW_ID}"
-          
+
       - name: Comment on PR if no 'no_change' changes
         if: steps.no_change_changes.outputs.no_change_changes == 0
         run: |
