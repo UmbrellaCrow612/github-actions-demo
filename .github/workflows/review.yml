@@ -1,28 +1,17 @@
-name: PR Review for umbrellacrow612
+name: "Review for um"
 
 on:
   pull_request:
-    types:
-      - opened
+    types: [opened]
 
 jobs:
-  request_review:
+  test:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Request review
-        if: github.event.pull_request.user.login == 'umbrellacrow612'
-        uses: actions/github-script@v5
+      - name: "Send Review Request"
+        if: github.actor == 'UmbrellaCrow612'
+        uses: kunihiko-t/review-request-action@v0.1.3
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            console.log(`Requesting review from: umbrellacrow612`);
-            
-            const response = await github.pulls.createReviewRequest({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              reviewers: ['umbrellacrow612']
-            });
-            console.log(response);
+          repo-token: ${{ secrets.TOKEN }}
+          reviewers: "UmbrellaCrow612"
+          team-reviewers: "a,b,c"
