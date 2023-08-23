@@ -1,16 +1,19 @@
-name: Request Review from umbrellaCrow612 on Folder Changes
+name: PR Review Workflow
 
 on:
-  push:
+  pull_request:
     paths:
-      - 'no_change/**' # Trigger only when there are changes in the no_change folder
+      - 'no-change/**'
+    types:
+      - opened
+      - synchronize
 
 jobs:
-  request_review:
+  pr_review:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repository
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Request review
@@ -18,31 +21,19 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: commits } = await github.rest.pulls.listCommits({
+            const { data: reviews } = await github.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number
+              pull_number: context.payload.pull_request.number,
             });
 
-            const changedFiles = new Set();
-            commits.forEach(commit => {
-              commit.files.forEach(file => {
-                if (file.filename.startsWith('no_change/')) {
-                  changedFiles.add(file.filename);
-                }
-              });
-            });
+            const reviewRequested = reviews.some(review => review.user.login === 'umbrellaman612');
 
-            if (changedFiles.size > 0) {
-              const pullRequestNumber = context.payload.pull_request.number;
-
-              await github.rest.pulls.createReview({
+            if (!reviewRequested) {
+              await github.pulls.createReviewRequest({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: pullRequestNumber,
-                event: 'REQUEST_REVIEW',
-                reviewers: ['umbrellaCrow612']
+                pull_number: context.payload.pull_request.number,
+                reviewers: ['umbrellaman612'],
               });
-            } else {
-              console.log('No changes in the no_change folder. Skipping review request.');
             }
