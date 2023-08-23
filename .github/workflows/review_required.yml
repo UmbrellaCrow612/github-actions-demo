@@ -1,0 +1,39 @@
+name: Require Review on Changes to 'no_change' Folder
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check_changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Find changes
+        id: find_changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          echo "::set-output name=changed_files::${CHANGED_FILES}"
+
+      - name: Check 'no_change' folder changes
+        id: no_change_changes
+        run: |
+          CHANGED_FILES="${{ steps.find_changes.outputs.changed_files }}"
+          NO_CHANGE_CHANGES=$(echo "$CHANGED_FILES" | grep -c '^no_change/')
+          echo "::set-output name=no_change_changes::${NO_CHANGE_CHANGES}"
+
+      - name: Add required review if 'no_change' changes
+        if: ${{ steps.no_change_changes.outputs.no_change_changes > 0 }}
+        run: |
+          PR_NUMBER=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")
+          echo "Adding required review to PR #$PR_NUMBER"
+          REVIEW_ID=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"event": "REQUEST_CHANGES"}' \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
+            | jq -r .id)
+          echo "::set-output name=review_id::${REVIEW_ID}"
