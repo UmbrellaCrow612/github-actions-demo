@@ -27,28 +27,3 @@ jobs:
 
       - name: Run tests
         run: npm run test-headless
-
-  request-review:
-    runs-on: ubuntu-latest
-    needs: test-and-build
-    if: github.event_name == 'pull_request' && github.event.action == 'opened'
-    
-    steps:
-      - name: Request review
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const owner = context.payload.repository.owner.login;
-            const repo = context.payload.repository.name;
-            const prNumber = context.payload.pull_request.number;
-            const reviewers = ['UmbrellaCrow612']; // List of reviewers
-
-            for (const reviewer of reviewers) {
-              octokit.pulls.createReviewRequest({
-                owner,
-                repo,
-                pull_number: prNumber,
-                reviewers: [reviewer],
-              });
-            }
