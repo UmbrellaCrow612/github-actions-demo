@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Add Pull Request Reviewer
-        uses: AveryCameronUofR/add-reviewer-gh-action@1.0.4
-        with:
-          reviewers: "umbrellaman612"
+        uses: AveryCameronUofR/add-reviewer-gh-action@1.0.3
+        with: 
+          reviewers: "UmbrellaCrow612"
           token: ${{ secrets.GITHUB_TOKEN }}
