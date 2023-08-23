@@ -1,4 +1,4 @@
-name: Request Review on Folder Changes
+name: Request Review from umbrellaCrow612 on Folder Changes
 
 on:
   push:
@@ -25,21 +25,16 @@ jobs:
               const repo = github.context.payload.repository.name;
               const pullRequestNumber = github.context.payload.pull_request.number;
 
-              const { data: currentUser } = await github.rest.users.getAuthenticated();
-              const { data: ownerUser } = await github.rest.users.getByUsername({
-                username: owner
-              });
-
-              if (currentUser.login !== ownerUser.login) {
+              if (owner !== 'umbrellaCrow612') {
                 await github.rest.pulls.createReview({
                   owner: owner,
                   repo: repo,
                   pull_number: pullRequestNumber,
                   event: 'REQUEST_REVIEW',
-                  reviewers: [owner]
+                  reviewers: ['umbrellaCrow612']
                 });
               } else {
-                console.log('Skipping review request as the pusher is the repository owner.');
+                console.log('Skipping review request as the pusher is umbrellaCrow612.');
               }
             } else {
               console.log('No changes in the no_change folder. Skipping review request.');
