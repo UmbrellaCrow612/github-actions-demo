@@ -3,7 +3,7 @@ name: PR Review Workflow
 on:
   pull_request:
     paths:
-      - 'no-change/**'
+      - 'no_change/**'
     types:
       - opened
       - synchronize
