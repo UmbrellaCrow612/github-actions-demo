@@ -27,12 +27,12 @@ jobs:
           echo "::set-output name=no_change_changes::${NO_CHANGE_CHANGES}"
 
       - name: Add required review if 'no_change' changes
-        if: ${{ steps.no_change_changes.outputs.no_change_changes > 0 }}
+        if: steps.no_change_changes.outputs.no_change_changes > 0
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "${GITHUB_EVENT_PATH}")
+          PR_NUMBER="${{ github.event.number }}"
           echo "Adding required review to PR #$PR_NUMBER"
           REVIEW_ID=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer ${{ github.token }}" \
             -d '{"event": "REQUEST_CHANGES"}' \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
             | jq -r .id)
