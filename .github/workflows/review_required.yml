@@ -27,13 +27,26 @@ jobs:
           echo "::set-output name=no_change_changes::${NO_CHANGE_CHANGES}"
 
       - name: Add required review if 'no_change' changes
+        id: add_review
         if: steps.no_change_changes.outputs.no_change_changes > 0
         run: |
           PR_NUMBER="${{ github.event.number }}"
           echo "Adding required review to PR #$PR_NUMBER"
           REVIEW_ID=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"event": "REQUEST_CHANGES"}' \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews" \
             | jq -r .id)
           echo "::set-output name=review_id::${REVIEW_ID}"
+          
+      - name: Comment on PR if no 'no_change' changes
+        if: steps.no_change_changes.outputs.no_change_changes == 0
+        run: |
+          PR_NUMBER="${{ github.event.number }}"
+          echo "No changes in 'no_change' folder. Adding a comment to PR #$PR_NUMBER"
+          COMMENT=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"body": "No changes in the `no_change` folder."}' \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+            | jq -r .id)
+          echo "::set-output name=comment_id::${COMMENT}"
