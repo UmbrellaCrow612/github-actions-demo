@@ -1,45 +1,46 @@
-name: Require Review for no_change Modifications
+name: Request Review on Folder Changes
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - synchronize
+  push:
+    paths:
+      - 'no_change/**' # Trigger only when there are changes in the no_change folder
 
 jobs:
-  review:
+  request_review:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Check for modifications
-        id: check_modifications
-        run: |
-          changes=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- no_change/)
-          if [ -n "$changes" ]; then
-            echo "Modifications detected in no_change folder."
-            echo "::set-output name=modifications::true"
-          else
-            echo "No modifications in no_change folder."
-            echo "::set-output name=modifications::false"
-          fi
-
-      - name: Request review if necessary
-        if: steps.check_modifications.outputs.modifications == 'true'
-        uses: actions/github-script@v5
+      - name: Request review
+        uses: actions/github-script@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = context.payload.pull_request.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            const changes = github.context.payload.commits.map(commit => commit.added.concat(commit.modified));
 
-            // Request review from the repository owner (you)
-            await github.pulls.createReviewRequest({
-              owner: owner,
-              repo: repo,
-              pull_number: prNumber,
-              reviewers: [owner], // Request review from the owner
-            });
+            if (changes.some(path => path.startsWith('no_change/'))) {
+              const owner = github.context.payload.repository.owner.login;
+              const repo = github.context.payload.repository.name;
+              const pullRequestNumber = github.context.payload.pull_request.number;
+
+              const { data: currentUser } = await github.rest.users.getAuthenticated();
+              const { data: ownerUser } = await github.rest.users.getByUsername({
+                username: owner
+              });
+
+              if (currentUser.login !== ownerUser.login) {
+                await github.rest.pulls.createReview({
+                  owner: owner,
+                  repo: repo,
+                  pull_number: pullRequestNumber,
+                  event: 'REQUEST_REVIEW',
+                  reviewers: [owner]
+                });
+              } else {
+                console.log('Skipping review request as the pusher is the repository owner.');
+              }
+            } else {
+              console.log('No changes in the no_change folder. Skipping review request.');
+            }
