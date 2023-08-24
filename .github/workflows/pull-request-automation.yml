@@ -1,0 +1,34 @@
+name: PR Review Request
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  request_review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check PR author
+        id: check_author
+        run: echo "PR_AUTHOR=$(jq -r '.pull_request.user.login' $GITHUB_EVENT_PATH)" >> $GITHUB_ENV
+      
+      - name: Request review from Chris
+        if: ${{ steps.check_author.outputs.PR_AUTHOR == 'UmbrellaCrow612' || steps.check_author.outputs.PR_AUTHOR == 'chin' }}
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pullRequest } = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            await github.pulls.createReviewRequest({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              reviewers: ['UmbrellaCrow612']
+            });
